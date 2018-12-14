@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Detect a face in a video stream and track it using a pan-tilt camera, keeping
-the faces in the center of the image.
+the face in the center of the image.
 
 The code relies on a Haar cascade face detector, and the pan-tilt platform 
 is controlled by serial communication with an Arduino.
