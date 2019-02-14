@@ -4,6 +4,9 @@ Servo panServo;
 Servo tiltServo;
 String inByte;
 int pos;
+unsigned long timeNow = 0;
+int period = 1000;                   // Trigger active time
+boolean relayTriggerActivated = false; 
 
 /*
    The code receives serial data and adjusts the servo positions. 
@@ -24,10 +27,14 @@ void setup() {
 // Main loop
 void loop()
 {
-  int val =  0;           /* byte value read from serial */
+  int val =  0;           // byte value read from serial 
 
-  rcRelay.write(180);
-
+  if(relayTriggerActivated && millis() > timeNow + period)    // If trigger has timed out
+  {
+    relayTriggerActivated = false;
+    rcRelay.write(0);
+    Serial.println("Relay OFF");
+  }
   
   if (Serial.available() >0) {
     // Read first byte (indicates which servo to adjust)
@@ -50,16 +57,23 @@ void loop()
           rcRelay.write(180);    // Maximum servo angle
           Serial.println("Relay ON");
         }
+
+        if(pos==2){              // "Trigger mode"
+          timeNow = millis();
+          rcRelay.write(180);    // Maximum servo angle
+          relayTriggerActivated = true;
+          Serial.println("Relay TRIGGERED");          
+        }
                 
       }
       
-      if(val=='P'){    // Pan servo
+      if(val=='P'){       // Pan servo
         panServo.write(pos);
         Serial.print("Pan:  ");
         Serial.println(inByte);
       } 
       
-      if(val=='T'){      // Tilt servo
+      if(val=='T'){       // Tilt servo
         tiltServo.write(pos);
         Serial.print("Tilt: ");
         Serial.println(inByte);

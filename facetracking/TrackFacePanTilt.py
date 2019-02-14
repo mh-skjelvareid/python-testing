@@ -17,7 +17,7 @@ import numpy as np
 
 # %% Set fixed parameters
 panGain = 0.02          # Parameter for adjusting servo pan position
-tiltGain = 0.03         # Parameter for adjusting servo tilt position
+tiltGain = 0.02         # Parameter for adjusting servo tilt position
 panLimits = (0,170)     # Min / max pan angle
 tiltLimits = (65,150)   # Min / max tilt angle
 desFacePos = (0.5,0.6)  # Desired face center, relative 
@@ -27,16 +27,16 @@ scaleFactor = 1.15      # Difference between scales used for detection
 minNeighbors = 5        # Lower number: Higher sensitivity (?), higher chance of error
 minSize = (60, 60)      # Minimum face size [pixels]
 maxSize = (350,350)     # Maximum face size [pixels]
-
+relayWaitPeriod = 5;    # How long to wait between activating relay
+faceCloseThreshold = 0.17;   # Relative size of face vs screen considered "close"
 
 # %% Initialize variables / objects
 panAngle = 90.0
 tiltAngle = 100.0
 video_capture = cv2.VideoCapture(0)
 faceCascade = cv2.CascadeClassifier(cascPath)
-#arduino = serial.Serial('COM3', 115200)   # create serial object named arduino
 arduino = serial.Serial('/dev/ttyACM0', 115200)   # create serial object named arduino
-
+refTime = time.perf_counter()
 
 # %% Methods for changing camera angle
 def updateServoPos(panAngle,tiltAngle):
@@ -56,7 +56,7 @@ def sendServoPos(posString):
     
 # %% Initial code (run once)
 time.sleep(2)                               # Let serial connection be established
-#updateServoPos(panAngle,tiltAngle)  # Set original tilt
+updateServoPos(panAngle,tiltAngle)  # Set original tilt
 
 # %% Create window
 window = cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
@@ -96,7 +96,13 @@ try:
             # Update camera angle to reduce x and y error
             panAngle -= panGain*xError;
             tiltAngle -= tiltGain*yError;        
-            updateServoPos(panAngle,tiltAngle)   
+            updateServoPos(panAngle,tiltAngle)  
+            
+            # Trigger relay if face is close enough
+            if (faces[index_rOffsetMin,2] > frameWidth*faceCloseThreshold):
+                if time.perf_counter() > refTime + relayWaitPeriod:
+                    refTime = time.perf_counter()
+                    sendServoPos('R2\n')    # Send trigger code
     
             # Draw rectangle(s) around face(s)
             for (x, y, w, h) in faces:
