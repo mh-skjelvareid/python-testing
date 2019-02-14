@@ -34,7 +34,8 @@ panAngle = 90.0
 tiltAngle = 100.0
 video_capture = cv2.VideoCapture(0)
 faceCascade = cv2.CascadeClassifier(cascPath)
-arduino = serial.Serial('COM3', 115200)   # create serial object named arduino
+#arduino = serial.Serial('COM3', 115200)   # create serial object named arduino
+arduino = serial.Serial('/dev/ttyACM0', 115200)   # create serial object named arduino
 
 
 # %% Methods for changing camera angle
@@ -55,8 +56,11 @@ def sendServoPos(posString):
     
 # %% Initial code (run once)
 time.sleep(2)                               # Let serial connection be established
-updateServoPos(panAngle,tiltAngle)  # Set original tilt
+#updateServoPos(panAngle,tiltAngle)  # Set original tilt
 
+# %% Create window
+window = cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Video', 900,900)
 
 # %% Main loop
 try:
