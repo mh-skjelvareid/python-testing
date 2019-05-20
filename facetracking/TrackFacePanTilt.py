@@ -17,7 +17,7 @@ import numpy as np
 
 # %% Set fixed parameters
 panGain = 0.02          # Parameter for adjusting servo pan position
-tiltGain = 0.02         # Parameter for adjusting servo tilt position
+tiltGain = 0.035         # Parameter for adjusting servo tilt position
 panLimits = (0,170)     # Min / max pan angle
 tiltLimits = (65,150)   # Min / max tilt angle
 desFacePos = (0.5,0.6)  # Desired face center, relative 
@@ -29,14 +29,18 @@ minSize = (60, 60)      # Minimum face size [pixels]
 maxSize = (350,350)     # Maximum face size [pixels]
 relayWaitPeriod = 5;    # How long to wait between activating relay
 faceCloseThreshold = 0.17;   # Relative size of face vs screen considered "close"
+noFacesResetTime = 10.0;
+defaultPanAngle = 90.0;
+defaultTiltAngle = 110.0;
 
 # %% Initialize variables / objects
-panAngle = 90.0
-tiltAngle = 100.0
+panAngle = defaultPanAngle
+tiltAngle = defaultTiltAngle
 video_capture = cv2.VideoCapture(0)
 faceCascade = cv2.CascadeClassifier(cascPath)
 arduino = serial.Serial('/dev/ttyACM0', 115200)   # create serial object named arduino
 refTime = time.perf_counter()
+noFaceCounter = time.perf_counter()
 
 # %% Methods for changing camera angle
 def updateServoPos(panAngle,tiltAngle):
@@ -107,7 +111,13 @@ try:
             # Draw rectangle(s) around face(s)
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                
+            # Reset "no faces" counter
+            noFaceCounter = time.perf_counter()
             
+        # Reset camera angle if "no faces" timeout
+        if time.perf_counter() > noFaceCounter + noFacesResetTime:
+            updateServoPos(defaultPanAngle,defaultTiltAngle)
     
         # Display the resulting frame (with or without faces)
         cv2.imshow('Video', frame)
